@@ -3,7 +3,7 @@ enablePlugins(ScalaJSPlugin)
 
 name := "nakama-common-scalajs"
 scalaVersion := "3.2.2"
-version := "0.1.0-SNAPSHOT"
+version := "1.26.0"
 scalacOptions ++= Seq("-source:future")
 
 
