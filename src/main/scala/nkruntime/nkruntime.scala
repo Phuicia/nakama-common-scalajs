@@ -28,23 +28,23 @@ val SystemUserId = "00000000-0000-0000-0000-000000000000"
  */
 trait Context extends js.Object {
   val env: js.Dictionary[String]
-  val executionMode: String
+  val executionMode: js.Object // typeof executionMode === 'object' && executionMode.constructor.name === 'Number'
   val node: String
   val version: String
-  val headers: js.Dictionary[js.Array[String]]
-  val queryParams: js.Dictionary[js.Array[String]]
-  val userId: String
-  val username: String
-  val vars: js.Dictionary[String]
-  val userSessionExp: Number
-  val sessionId: String
-  val clientIp: String
-  val clientPort: String
+  val headers: js.UndefOr[js.Dictionary[js.Array[String]]] = js.undefined
+  val queryParams: js.UndefOr[js.Dictionary[js.Array[String]]] = js.undefined
+  val userId: js.UndefOr[String] = js.undefined
+  val username: js.UndefOr[String] = js.undefined
+  val vars: js.UndefOr[js.Dictionary[String]] = js.undefined
+  val userSessionExp: js.UndefOr[Number] = js.undefined
+  val sessionId: js.UndefOr[String] = js.undefined
+  val clientIp: js.UndefOr[String] = js.undefined
+  val clientPort: js.UndefOr[String] = js.undefined
   val matchId: String
   val matchNode: String
   val matchLabel: String
   val matchTickRate: Number
-  val lang: String
+  val lang: js.UndefOr[String] = js.undefined
 }
 
 type ReadPermissionValues = 0 | 1 | 2
