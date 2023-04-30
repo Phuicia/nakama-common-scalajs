@@ -16,7 +16,7 @@ package nkruntime
 
 import scala.scalajs.js
 
-val runtimeVersion = "V1.26.0"
+val runtimeVersion = "V1.27.0"
 
 /**
  * System User
@@ -396,7 +396,7 @@ trait MatchDispatcher extends js.Function {
    * @throws TypeError
    * @throws GoError
    */
-  def broadcastMessageDeferred(opcode: Number, data: js.UndefOr[js.typedarray.ArrayBuffer | String | Null], presences: js.UndefOr[Array[Presence] | Null], sender: js.UndefOr[Presence | Null], reliable: js.UndefOr[Boolean]): Unit
+  def broadcastMessageDeferred(opcode: Number, data: js.UndefOr[js.typedarray.ArrayBuffer | String | Null] = js.undefined, presences: js.UndefOr[Array[Presence] | Null] = js.undefined, sender: js.UndefOr[Presence | Null] = js.undefined, reliable: js.UndefOr[Boolean] = js.undefined): Unit
 
   /**
    * Kick presences from match.
@@ -673,6 +673,10 @@ trait DeleteLeaderboardRecordRequest extends js.Object {
   val leaderboardId: js.UndefOr[String] = js.undefined
 }
 
+trait DeleteTournamentRecordRequest {
+  val leaderboardId: js.UndefOr[String] = js.undefined
+}
+
 trait ListLeaderboardRecordsRequest extends js.Object {
   val leaderboardId: js.UndefOr[String] = js.undefined
   val ownerIds: js.UndefOr[js.Array[String]] = js.undefined
@@ -855,11 +859,12 @@ trait FriendList extends js.Object {
 }
 
 object GroupUserState {
-  type Type = 0 | 1 | 2 | 3
+  type Type = 0 | 1 | 2 | 3 | 4
   val Superadmin: Type = 0
   val Admin: Type = 1
   val Member: Type = 2
   val JoinRequest: Type = 3
+  val Banned: Type = 4
 }
 
 trait GroupUser extends js.Object {
@@ -880,11 +885,11 @@ trait LeaderboardRecordList extends js.Object {
 }
 
 trait MatchList extends js.Object {
-  val matches: js.Array[Match] = js.undefined
+  val matches: js.Array[Match]
 }
 
 trait DeleteNotificationsRequest extends js.Object {
-  val ids: js.Array[String] = js.undefined
+  val ids: js.Array[String]
 }
 
 trait StorageObjectList extends js.Object {
@@ -1660,6 +1665,22 @@ trait Initializer extends js.Object {
    * @throws TypeError
    */
   def registerAfterDeleteLeaderboardRecord(fn: AfterHookFunction[Unit, DeleteLeaderboardRecordRequest]): Unit
+
+  /**
+   * Register before Hook for RPC DeleteTournamentRecord function.
+   *
+   * @param fn - The function to execute before DeleteTournamentRecord.
+   * @throws TypeError
+   */
+  def registerBeforeDeleteTournamentRecord(fn: BeforeHookFunction[DeleteTournamentRecordRequest]): Unit
+
+  /**
+   * Register after Hook for RPC DeleteTournamentRecord function.
+   *
+   * @param fn - The function to execute after DeleteTournamentRecord.
+   * @throws TypeError
+   */
+  def registerAfterDeleteTournamentRecord(fn: AfterHookFunction[Unit, DeleteTournamentRecordRequest]): Unit
 
   /**
    * Register before Hook for RPC ListLeaderboardRecords function.
@@ -2569,9 +2590,9 @@ trait Presence extends js.Object {
   val sessionId: String
   val username: String
   val node: String
-  val status: js.UndefOr[String]
-  val hidden: js.UndefOr[Boolean]
-  val persistence: js.UndefOr[Boolean]
+  val status: js.UndefOr[String] = js.undefined
+  val hidden: js.UndefOr[Boolean] = js.undefined
+  val persistence: js.UndefOr[Boolean] = js.undefined
   val reason: js.UndefOr[PresenceReason.Type] = js.undefined
 }
 
@@ -3119,16 +3140,6 @@ trait ValidateSubscriptionResponse extends js.Object {
   val validatedSubscription: ValidatedSubscription
 }
 
-trait ValidatedPurchaseOwner extends js.Object {
-  val validatedPurchase: ValidatedPurchase
-  val userId: String
-}
-
-trait ValidatedSubscriptionOwner extends js.Object {
-  val validatedSubscription: ValidatedSubscription
-  val userId: String
-}
-
 type ValidatedPurchaseStore = "APPLE_APP_STORE" | "GOOGLE_PLAY_STORE" | "HUAWEI_APP_GALLERY"
 
 type ValidatedPurchaseEnvironment = "UNKNOWN" | "SANDBOX" | "PRODUCTION"
@@ -3141,6 +3152,7 @@ trait ValidatedPurchase extends js.Object {
   val purchaseTime: Number
   val createTime: Number
   val updateTime: Number
+  val refundTime: Number
   val providerResponse: String
   val environment: ValidatedPurchaseEnvironment
   val seenBefore: Boolean
@@ -3154,6 +3166,7 @@ trait ValidatedSubscription extends js.Object {
   val purchaseTime: Number
   val createTime: Number
   val updateTime: Number
+  val refundTime: Number
   val environment: ValidatedPurchaseEnvironment
   val expiryTime: String
   val active: Boolean
@@ -3293,16 +3306,17 @@ trait Nakama extends js.Object {
   /**
    * Http Request
    *
-   * @param url     - Request target URL.
-   * @param method  - Http method.
-   * @param headers - Http request headers.
-   * @param body    - Http request body.
-   * @param timeout - Http Request timeout in ms.
+   * @param url      - Request target URL.
+   * @param method   - Http method.
+   * @param headers  - Opt. Http request headers.
+   * @param body     - Opt. Http request body.
+   * @param timeout  - Opt. Http Request timeout in ms.
+   * @param insecure - Opt. Set to true to skip TLS validations. Defaults to false.
    * @return Http response
    * @throws TypeError
    * @throws GoError
    */
-  def httpRequest(url: String, method: RequestMethod, headers: js.UndefOr[js.Dictionary[String]] = js.undefined, body: js.UndefOr[String] = js.undefined, timeout: js.UndefOr[Number] = js.undefined): HttpResponse
+  def httpRequest(url: String, method: RequestMethod, headers: js.UndefOr[js.Dictionary[String]] = js.undefined, body: js.UndefOr[String] = js.undefined, timeout: js.UndefOr[Number] = js.undefined, insecure: js.UndefOr[Boolean] = js.undefined): HttpResponse
 
   /**
    * Base 64 Encode
@@ -3811,41 +3825,41 @@ trait Nakama extends js.Object {
    * Unlink Apple sign in from an account.
    *
    * @param userId - User ID.
-   * @param token  - Apple sign in token.
+   * @param token  - Opt. Apple sign in token.
    * @throws TypeError
    * @throws GoError
    */
-  def unlinkApple(userId: String, token: String): Unit
+  def unlinkApple(userId: String, token: js.UndefOr[String] = js.undefined): Unit
 
   /**
    * Unlink a customID from an account.
    *
    * @param userId   - User ID.
-   * @param customID - Custom ID.
+   * @param customID - Opt. Custom ID.
    * @throws TypeError
    * @throws GoError
    */
-  def unlinkCustom(userId: String, customID: String): Unit
+  def unlinkCustom(userId: String, customID: js.UndefOr[String] = js.undefined): Unit
 
   /**
    * Unlink a custom device from an account.
    *
    * @param userId   - User ID.
-   * @param deviceID - Device ID.
+   * @param deviceID - Opt. Device ID.
    * @throws TypeError
    * @throws GoError
    */
-  def unlinkDevice(userId: String, deviceID: String): Unit
+  def unlinkDevice(userId: String, deviceID: js.UndefOr[String] = js.undefined): Unit
 
   /**
    * Unlink username and password from an account.
    *
    * @param userId - User ID.
-   * @param email  - Email.
+   * @param email  - Opt. Email.
    * @throws TypeError
    * @throws GoError
    */
-  def unlinkEmail(userId: String, email: String): Unit
+  def unlinkEmail(userId: String, email: js.UndefOr[String] = js.undefined): Unit
 
   /**
    * Unlink Facebook from an account.
@@ -3855,7 +3869,7 @@ trait Nakama extends js.Object {
    * @throws TypeError
    * @throws GoError
    */
-  def unlinkFacebook(userId: String, token: String): Unit
+  def unlinkFacebook(userId: String, token: js.UndefOr[String] = js.undefined): Unit
 
   /**
    * Unlink Facebook Instant Games from an account.
@@ -3865,7 +3879,7 @@ trait Nakama extends js.Object {
    * @throws TypeError
    * @throws GoError
    */
-  def unlinkFacebookInstantGame(userId: String, signedPlayerInfo: String): Unit
+  def unlinkFacebookInstantGame(userId: String, signedPlayerInfo: js.UndefOr[String] = js.undefined): Unit
 
   /**
    * Unlink Apple Game Center from an account.
@@ -3880,7 +3894,13 @@ trait Nakama extends js.Object {
    * @throws TypeError
    * @throws GoError
    */
-  def unlinkGameCenter(userId: String, playerId: String, bundleId: String, ts: Number, salt: String, signature: String, publicKeyURL: String): Unit
+  def unlinkGameCenter(userId: String,
+                       playerId: js.UndefOr[String] = js.undefined,
+                       bundleId: js.UndefOr[String] = js.undefined,
+                       ts: js.UndefOr[Number] = js.undefined,
+                       salt: js.UndefOr[String] = js.undefined,
+                       signature: js.UndefOr[String] = js.undefined,
+                       publicKeyURL: js.UndefOr[String] = js.undefined): Unit
 
   /**
    * Unlink Google from account.
@@ -3890,7 +3910,7 @@ trait Nakama extends js.Object {
    * @throws TypeError
    * @throws GoError
    */
-  def unlinkGoogle(userId: String, token: String): Unit
+  def unlinkGoogle(userId: String, token: js.UndefOr[String] = js.undefined): Unit
 
   /**
    * Unlink Steam from an account.
@@ -3900,7 +3920,7 @@ trait Nakama extends js.Object {
    * @throws TypeError
    * @throws GoError
    */
-  def unlinkSteam(userId: String, token: String): Unit
+  def unlinkSteam(userId: String, token: js.UndefOr[String] = js.undefined): Unit
 
   /**
    * List stream presences.
@@ -4260,13 +4280,13 @@ trait Nakama extends js.Object {
   def leaderboardDelete(leaderboardID: String): Unit
 
   /**
-   * Get a list of tournaments by id.
+   * Get a list of leaderboards.
    *
    * @param categoryStart - Filter leaderboard with categories greater or equal than this value.
    * @param categoryEnd   - Filter leaderboard with categories equal or less than this value.
    * @param limit         - Return only the required number of leaderboard denoted by this limit value.
    * @param cursor        - Cursor to paginate to the next result set. If this is empty/null there is no further results.
-   * @return The leaderboard data for the given ids.
+   * @return The leaderboards data.
    * @throws TypeError
    * @throws GoError
    */
@@ -4306,7 +4326,7 @@ trait Nakama extends js.Object {
    * Delete a leaderboard record.
    *
    * @param leaderboardID - Leaderboard id.
-   * @param ownerID       - Array of leaderboard owners.
+   * @param ownerID       - Leaderboard record owner.
    * @throws TypeError
    * @throws GoError
    */
@@ -4417,7 +4437,7 @@ trait Nakama extends js.Object {
   def tournamentsGetId(tournamentIds: js.Array[String]): js.Array[Tournament]
 
   /**
-   * Get a list of tournaments by id.
+   * Get a list of tournaments.
    *
    * @param categoryStart - Filter tournament with categories greater or equal than this value.
    * @param categoryEnd   - Filter tournament with categories equal or less than this value.
@@ -4425,7 +4445,7 @@ trait Nakama extends js.Object {
    * @param endTime       - Filter tournament with that end before this time.
    * @param limit         - Return only the required number of tournament denoted by this limit value.
    * @param cursor        - Cursor to paginate to the next result set. If this is empty/null there is no further results.
-   * @return The tournament data for the given ids.
+   * @return The tournaments data.
    * @throws TypeError
    * @throws GoError
    */
@@ -4460,6 +4480,16 @@ trait Nakama extends js.Object {
    * @throws GoError
    */
   def tournamentRecordWrite(id: String, ownerID: String, username: js.UndefOr[String] = js.undefined, score: js.UndefOr[Number] = js.undefined, subscore: js.UndefOr[Number] = js.undefined, metadata: js.UndefOr[js.Dictionary[js.Any]] = js.undefined, operator: js.UndefOr[OverrideOperator.Type] = js.undefined): LeaderboardRecord
+
+  /**
+   * Delete a tournament record.
+   *
+   * @param tournamentID - Tournament id.
+   * @param ownerID      - Tournament record owner.
+   * @throws TypeError
+   * @throws GoError
+   */
+  def tournamentRecordDelete(tournamentID: String, ownerID: String): Unit
 
   /**
    * Fetch the list of tournament records around the owner.
@@ -4763,7 +4793,7 @@ trait Nakama extends js.Object {
    * @throws TypeError
    * @throws GoError
    */
-  def purchaseGetByTransactionId(transactionID: String): ValidatedPurchaseOwner
+  def purchaseGetByTransactionId(transactionID: String): ValidatedPurchase
 
   /**
    * List validated and stored purchases.
@@ -4813,7 +4843,7 @@ trait Nakama extends js.Object {
    * @throws TypeError
    * @throws GoError
    */
-  def subscriptionGetByProductId(userID: String, productID: String): ValidatedPurchaseOwner
+  def subscriptionGetByProductId(userID: String, productID: String): ValidatedSubscription
 
   /**
    * Send channel message.
@@ -4879,6 +4909,42 @@ trait Nakama extends js.Object {
    * @throws GoError
    */
   def cronNext(cron: String, timestamp: Number): Number
+
+  /**
+   * Get local cache data by key.
+   *
+   * @param key - local cache key.
+   * @return local cache object.
+   * @throws TypeError
+   * @throws GoError
+   */
+  def localcacheGet(key: String): js.Any
+
+  /**
+   * Put data to local cache.
+   *
+   * @param key   - local cache key.
+   * @param value - local cache value.
+   * @throws TypeError
+   * @throws GoError
+   */
+  def localcachePut(key: String, value: js.Any): Unit
+
+  /**
+   * Delete local cache data by key.
+   *
+   * @param key - local cache key.
+   * @throws TypeError
+   * @throws GoError
+   */
+  def localcacheDelete(key: String): Unit
+
+  /**
+   * Get Satori object.
+   *
+   * @return The satori integration interface.
+   */
+  def getSatori(): Satori
 }
 
 /**
@@ -4897,4 +4963,116 @@ trait InitModule extends js.Function {
    * @param initializer - The injector to initialize features in the game server.
    */
   def apply(ctx: Context, logger: Logger, nk: Nakama, initializer: Initializer): Unit
+}
+
+trait Properties extends js.Object {
+  val default: js.Dictionary[String]
+  val custom: js.Dictionary[String]
+  val computed: js.Dictionary[String]
+}
+
+trait PropertiesUpdate extends js.Object {
+  val default: js.UndefOr[js.Dictionary[String]] = js.undefined
+  val custom: js.UndefOr[js.Dictionary[String]] = js.undefined
+}
+
+trait SatoriEvent extends js.Object {
+  val name: String
+  val id: String
+  val metadata: js.UndefOr[js.Dictionary[String]] = js.undefined
+  val value: String
+  val timestamp: Number
+}
+
+trait Experiment extends js.Object {
+  val name: String
+  val value: String
+}
+
+trait Flag extends js.Object {
+  val name: String
+  val value: String
+  val conditionChanged: Boolean
+}
+
+trait LiveEvent extends js.Object {
+  val name: String
+  val description: String
+  val value: String
+  val activeStartTime: Number
+  val activeEndTime: Number
+}
+
+/**
+ * The Satori integration functions.
+ */
+trait Satori extends js.Object {
+  /**
+   * Create identity.
+   *
+   * @param id - Identity identifier.
+   * @throws TypeError
+   * @throws GoError
+   */
+  def authenticate(id: String): Unit
+
+  /**
+   * Get identity properties.
+   *
+   * @param id - Identity identifier.
+   * @return The identity properties.
+   * @throws TypeError
+   * @throws GoError
+   */
+  def propertiesGet(id: String): js.Array[Properties]
+
+  /**
+   * Update identity properties.
+   *
+   * @param id         - Identity identifier.
+   * @param properties - Updated properties.
+   * @throws TypeError
+   * @throws GoError
+   */
+  def propertiesUpdate(id: String, properties: PropertiesUpdate): Unit
+
+  /**
+   * Publish events.
+   *
+   * @param id     - Identity identifier.
+   * @param events - Events to publish.
+   * @throws TypeError
+   * @throws GoError
+   */
+  def eventsPublish(id: String, events: js.Array[SatoriEvent]): Unit
+
+  /**
+   * List experiments.
+   *
+   * @param id    - Identity identifier.
+   * @param names - Opt. List of experiment names.
+   * @throws TypeError
+   * @throws GoError
+   */
+  def experimentsList(id: String, names: js.UndefOr[js.Array[String]] = js.undefined): js.Array[Experiment]
+
+  /**
+   * List flags.
+   *
+   * @param id    - Identity identifier.
+   * @param names - Opt. List of flag names.
+   * @throws TypeError
+   * @throws GoError
+   */
+  def flagsList(id: String, names: js.UndefOr[js.Array[String]] = js.undefined): js.Array[Flag]
+
+  /**
+   * List live events.
+   *
+   * @param id    - Identity identifier.
+   * @param names - Opt. List of live event names.
+   * @throws TypeError
+   * @throws GoError
+   */
+  def liveEventsList(id: String, names: js.UndefOr[js.Array[String]] = js.undefined): js.Array[LiveEvent]
 }

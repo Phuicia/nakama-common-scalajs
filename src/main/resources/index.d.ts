@@ -185,7 +185,7 @@ declare namespace nkruntime {
      * Tournament end hook function definition.
      */
     export interface TournamentEndFunction {
-         /**
+        /**
          * A Tournament end register hook function definition.
          *
          * @param ctx - The context for the execution.
@@ -250,7 +250,7 @@ declare namespace nkruntime {
     /**
      * Subscription Notification Apple function definition.
      */
-       export interface SubscriptionNotificationAppleFunction {
+    export interface SubscriptionNotificationAppleFunction {
         /**
          * A Subscription Notification Apple register hook function definition.
          *
@@ -282,7 +282,7 @@ declare namespace nkruntime {
     /**
      * Subscription Notification Google function definition.
      */
-       export interface SubscriptionNotificationGoogleFunction {
+    export interface SubscriptionNotificationGoogleFunction {
         /**
          * A Subscription Notification Google register hook function definition.
          *
@@ -436,7 +436,7 @@ declare namespace nkruntime {
         signature?: string
         publicKeyUrl?: string
         vars?: SessionVars
-      }
+    }
 
     export interface AuthenticateGameCenterRequest {
         account?: AccountGameCenter
@@ -598,6 +598,10 @@ declare namespace nkruntime {
         leaderboardId?: string
     }
 
+    export interface DeleteTournamentRecordRequest {
+        tournamentId?: string
+    }
+
     export interface ListLeaderboardRecordsRequest {
         leaderboardId?: string
         ownerIds?: string[]
@@ -702,7 +706,7 @@ declare namespace nkruntime {
         collection?: string
         key?: string
         version?: string
-      }
+    }
 
     export interface DeleteStorageObjectsRequest {
         objectIds?: DeleteStorageObjectId[]
@@ -794,6 +798,7 @@ declare namespace nkruntime {
         Admin = 1,
         Member = 2,
         JoinRequest = 3,
+        Banned = 4,
     }
 
     export interface GroupUser {
@@ -1556,6 +1561,22 @@ declare namespace nkruntime {
         registerAfterDeleteLeaderboardRecord(fn: AfterHookFunction<void, DeleteLeaderboardRecordRequest>): void;
 
         /**
+         * Register before Hook for RPC DeleteTournamentRecord function.
+         *
+         * @param fn - The function to execute before DeleteTournamentRecord.
+         * @throws {TypeError}
+         */
+        registerBeforeDeleteTournamentRecord(fn: BeforeHookFunction<DeleteTournamentRecordRequest>): void;
+
+        /**
+         * Register after Hook for RPC DeleteTournamentRecord function.
+         *
+         * @param fn - The function to execute after DeleteTournamentRecord.
+         * @throws {TypeError}
+         */
+        registerAfterDeleteTournamentRecord(fn: AfterHookFunction<void, DeleteTournamentRecordRequest>): void;
+
+        /**
          * Register before Hook for RPC ListLeaderboardRecords function.
          *
          * @param fn - The function to execute before ListLeaderboardRecords.
@@ -2113,7 +2134,7 @@ declare namespace nkruntime {
          * @param fn - The function to execute after ValidatePurchaseApple.
          * @throws {TypeError}
          */
-         registerAfterValidatePurchaseApple(fn: AfterHookFunction<ValidatePurchaseResponse, ValidatePurchaseAppleRequest>): void;
+        registerAfterValidatePurchaseApple(fn: AfterHookFunction<ValidatePurchaseResponse, ValidatePurchaseAppleRequest>): void;
 
         /**
          * Register before Hook for RPC ValidateSubscriptionApple function.
@@ -2147,7 +2168,7 @@ declare namespace nkruntime {
          * @param fn - The function to execute after ValidatePurchaseGoogle.
          * @throws {TypeError}
          */
-         registerAfterValidatePurchaseGoogle(fn: AfterHookFunction<ValidatePurchaseResponse, ValidatePurchaseGoogleRequest>): void;
+        registerAfterValidatePurchaseGoogle(fn: AfterHookFunction<ValidatePurchaseResponse, ValidatePurchaseGoogleRequest>): void;
 
         /**
          * Register before Hook for RPC ValidatePurchaseGoogle function.
@@ -2179,7 +2200,7 @@ declare namespace nkruntime {
          * @param fn - The function to execute after ValidatePurchaseHuawei.
          * @throws {TypeError}
          */
-         registerAfterValidatePurchaseHuawei(fn: AfterHookFunction<ValidatePurchaseResponse, ValidatePurchaseHuaweiRequest>): void;
+        registerAfterValidatePurchaseHuawei(fn: AfterHookFunction<ValidatePurchaseResponse, ValidatePurchaseHuaweiRequest>): void;
 
         /**
          * Register before Hook for RPC Event function.
@@ -2683,7 +2704,7 @@ declare namespace nkruntime {
     export interface UserGroupList {
         userGroups?: UserGroupListUserGroup[]
         cursor?: string
-      }
+    }
 
     export interface UserGroupListUserGroup {
         group?: Group
@@ -3007,39 +3028,33 @@ declare namespace nkruntime {
         validatedSubscription: ValidatedSubscription
     }
 
-    export interface ValidatedPurchaseOwner {
-        validatedPurchase: ValidatedPurchase
-        userId: string
-    }
-
-    export interface ValidatedSubscriptionOwner {
-      validatedSubscription: ValidatedSubscription
-      userId: string
-    }
-
     export type ValidatedPurchaseStore = "APPLE_APP_STORE" | "GOOGLE_PLAY_STORE" | "HUAWEI_APP_GALLERY"
 
     export type ValidatedPurchaseEnvironment = "UNKNOWN" | "SANDBOX" | "PRODUCTION"
 
     export interface ValidatedPurchase {
+        userId: string
         productId: string
         transactionId: string
         store: ValidatedPurchaseStore
         purchaseTime: number
         createTime: number
         updateTime: number
+        refundTime: number
         providerResponse: string
         environment: ValidatedPurchaseEnvironment
         seenBefore: boolean
     }
 
     export interface ValidatedSubscription {
+        userId: string
         productId: string
         originalTransactionId: string
         store: ValidatedPurchaseStore
         purchaseTime: number
         createTime: number
         updateTime: number
+        refundTime: number
         environment: ValidatedPurchaseEnvironment
         expiryTime: string
         active: boolean
@@ -3091,7 +3106,7 @@ declare namespace nkruntime {
          * @param data - Data to convert to string.
          * @throws {TypeError}
          */
-         binaryToString(data: ArrayBuffer): string;
+        binaryToString(data: ArrayBuffer): string;
 
         /**
          * Convert a string to binary data.
@@ -3099,7 +3114,7 @@ declare namespace nkruntime {
          * @param str - String to convert to binary data.
          * @throws {TypeError}
          */
-         stringToBinary(str: string): ArrayBuffer;
+        stringToBinary(str: string): ArrayBuffer;
 
         /**
          * Emit an event to be processed.
@@ -3176,13 +3191,14 @@ declare namespace nkruntime {
          *
          * @param url - Request target URL.
          * @param method - Http method.
-         * @param headers - Http request headers.
-         * @param body - Http request body.
-         * @param timeout - Http Request timeout in ms.
+         * @param headers - Opt. Http request headers. Defaults to no headers.
+         * @param body - Opt. Http request body. Defaults to undefined.
+         * @param timeout - Opt. Http Request timeout in ms. Defaults to 5s.
+         * @param insecure - Opt. Set to true to skip TLS validations. Defaults to false.
          * @returns Http response
          * @throws {TypeError, GoError}
          */
-        httpRequest(url: string, method: RequestMethod, headers?: {[header: string]: string}, body?: string, timeout?: number): HttpResponse
+        httpRequest(url: string, method: RequestMethod, headers?: {[header: string]: string}, body?: string, timeout?: number, insecure?: boolean): HttpResponse
 
         /**
          * Base 64 Encode
@@ -3668,37 +3684,37 @@ declare namespace nkruntime {
          * Unlink Apple sign in from an account.
          *
          * @param userId - User ID.
-         * @param token - Apple sign in token.
+         * @param token - Opt. Apple sign in token.
          * @throws {TypeError, GoError}
          */
-        unlinkApple(userId: string, token: string): void;
+        unlinkApple(userId: string, token?: string): void;
 
         /**
          * Unlink a customID from an account.
          *
          * @param userId - User ID.
-         * @param customID - Custom ID.
+         * @param customID - Opt. Custom ID.
          * @throws {TypeError, GoError}
          */
-        unlinkCustom(userId: string, customID: string): void;
+        unlinkCustom(userId: string, customID?: string): void;
 
         /**
          * Unlink a custom device from an account.
          *
          * @param userId - User ID.
-         * @param deviceID - Device ID.
+         * @param deviceID - Opt. Device ID.
          * @throws {TypeError, GoError}
          */
-        unlinkDevice(userId: string, deviceID: string): void;
+        unlinkDevice(userId: string, deviceID?: string): void;
 
         /**
          * Unlink username and password from an account.
          *
          * @param userId - User ID.
-         * @param email - Email.
+         * @param email - Opt. Email.
          * @throws {TypeError, GoError}
          */
-        unlinkEmail(userId: string, email: string): void;
+        unlinkEmail(userId: string, email?: string): void;
 
         /**
          * Unlink Facebook from an account.
@@ -3707,7 +3723,7 @@ declare namespace nkruntime {
          * @param token - Password.
          * @throws {TypeError, GoError}
          */
-        unlinkFacebook(userId: string, token: string): void;
+        unlinkFacebook(userId: string, token?: string): void;
 
         /**
          * Unlink Facebook Instant Games from an account.
@@ -3716,7 +3732,7 @@ declare namespace nkruntime {
          * @param signedPlayerInfo - Signed player info.
          * @throws {TypeError, GoError}
          */
-        unlinkFacebookInstantGame(userId: string, signedPlayerInfo: string): void;
+        unlinkFacebookInstantGame(userId: string, signedPlayerInfo?: string): void;
 
         /**
          * Unlink Apple Game Center from an account.
@@ -3732,12 +3748,12 @@ declare namespace nkruntime {
          */
         unlinkGameCenter(
             userId: string,
-            playerId: string,
-            bundleId: string,
-            ts: number,
-            salt: string,
-            signature: string,
-            publicKeyURL: string,
+            playerId?: string,
+            bundleId?: string,
+            ts?: number,
+            salt?: string,
+            signature?: string,
+            publicKeyURL?: string,
         ): void;
 
         /**
@@ -3747,7 +3763,7 @@ declare namespace nkruntime {
          * @param token - Google token.
          * @throws {TypeError, GoError}
          */
-        unlinkGoogle(userId: string, token: string): void;
+        unlinkGoogle(userId: string, token?: string): void;
 
         /**
          * Unlink Steam from an account.
@@ -3756,7 +3772,7 @@ declare namespace nkruntime {
          * @param token - Steam token.
          * @throws {TypeError, GoError}
          */
-        unlinkSteam(userId: string, token: string): void;
+        unlinkSteam(userId: string, token?: string): void;
 
         /**
          * List stream presences.
@@ -3874,7 +3890,7 @@ declare namespace nkruntime {
          * @param sessionID - Opt. Presence disconnect reason.
          * @throws {TypeError, GoError}
          */
-         sessionDisconnect(sessionID: string, reason?: PresenceReason): void;
+        sessionDisconnect(sessionID: string, reason?: PresenceReason): void;
 
         /**
          * Log out a user from their current session.
@@ -3884,7 +3900,7 @@ declare namespace nkruntime {
          * @param refreshToken - Opt. The current session refresh token.
          * @throws {TypeError, GoError}
          */
-         sessionLogout(userId: string, token?: string, refreshToken?:string): void;
+        sessionLogout(userId: string, token?: string, refreshToken?:string): void;
 
         /**
          * Create a new match.
@@ -4092,16 +4108,16 @@ declare namespace nkruntime {
         leaderboardDelete(leaderboardID: string): void;
 
         /**
-         * Get a list of tournaments by id.
+         * Get a list of leaderboards.
          *
          * @param categoryStart - Filter leaderboard with categories greater or equal than this value.
          * @param categoryEnd - Filter leaderboard with categories equal or less than this value.
          * @param limit - Return only the required number of leaderboard denoted by this limit value.
          * @param cursor - Cursor to paginate to the next result set. If this is empty/null there is no further results.
-         * @returns The leaderboard data for the given ids.
+         * @returns The leaderboards data.
          * @throws {TypeError, GoError}
          */
-         leaderboardList(categoryStart?: number, categoryEnd?: number, limit?: number, cursor?: string): LeaderboardList;
+        leaderboardList(categoryStart?: number, categoryEnd?: number, limit?: number, cursor?: string): LeaderboardList;
 
         /**
          * List records of a leaderboard.
@@ -4135,7 +4151,7 @@ declare namespace nkruntime {
          * Delete a leaderboard record.
          *
          * @param leaderboardID - Leaderboard id.
-         * @param ownerID - Array of leaderboard owners.
+         * @param ownerID - Leaderboard record owner.
          * @throws {TypeError, GoError}
          */
         leaderboardRecordDelete(leaderboardID: string, ownerID: string): void;
@@ -4240,7 +4256,7 @@ declare namespace nkruntime {
         tournamentsGetId(tournamentIds: string[]): Tournament[];
 
         /**
-         * Get a list of tournaments by id.
+         * Get a list of tournaments.
          *
          * @param categoryStart - Filter tournament with categories greater or equal than this value.
          * @param categoryEnd - Filter tournament with categories equal or less than this value.
@@ -4248,7 +4264,7 @@ declare namespace nkruntime {
          * @param endTime - Filter tournament with that end before this time.
          * @param limit - Return only the required number of tournament denoted by this limit value.
          * @param cursor - Cursor to paginate to the next result set. If this is empty/null there is no further results.
-         * @returns The tournament data for the given ids.
+         * @returns The tournaments data.
          * @throws {TypeError, GoError}
          */
         tournamentList(categoryStart?: number, categoryEnd?: number, startTime?: number, endTime?: number, limit?: number, cursor?: string): TournamentList;
@@ -4280,6 +4296,15 @@ declare namespace nkruntime {
          * @throws {TypeError, GoError}
          */
         tournamentRecordWrite(id: string, ownerID: string, username?: string, score?: number, subscore?: number, metadata?: {[key: string]: any}, operator?: OverrideOperator): LeaderboardRecord;
+
+        /**
+         * Delete a tournament record.
+         *
+         * @param tournamentID - Tournament id.
+         * @param ownerID - Tournament record owner.
+         * @throws {TypeError, GoError}
+         */
+        tournamentRecordDelete(tournamentID: string, ownerID: string): void;
 
         /**
          * Fetch the list of tournament records around the owner.
@@ -4380,7 +4405,7 @@ declare namespace nkruntime {
          * @param count - Number of groups to retrieve.
          * @throws {TypeError, GoError}
          */
-         groupsGetRandom(count: number): Group[]
+        groupsGetRandom(count: number): Group[]
 
         /**
          * List all groups the user belongs to.
@@ -4477,7 +4502,7 @@ declare namespace nkruntime {
          * @param callerID - Opt. User ID mandating the operation to check for sufficient priviledges. Defaults to admin user if empty.
          * @throws {TypeError, GoError}
          */
-         groupUsersBan(groupID: string, userIds: string[], callerID?: string): void;
+        groupUsersBan(groupID: string, userIds: string[], callerID?: string): void;
 
         /**
          * Promote users in a group.
@@ -4539,7 +4564,7 @@ declare namespace nkruntime {
          * @returns The result of the validated and stored purchases from the receipt.
          * @throws {TypeError, GoError}
          */
-         purchaseValidateGoogle(userID: string, purchase: string, persist?: boolean, clientEmailOverride?: string, privateKeyOverride?: string): ValidatePurchaseResponse
+        purchaseValidateGoogle(userID: string, purchase: string, persist?: boolean, clientEmailOverride?: string, privateKeyOverride?: string): ValidatePurchaseResponse
 
         /**
          * Validate a Huawei purchase payload.
@@ -4559,7 +4584,7 @@ declare namespace nkruntime {
          * @returns The data of the validated and stored purchase.
          * @throws {TypeError, GoError}
          */
-        purchaseGetByTransactionId(transactionID: string): ValidatedPurchaseOwner
+        purchaseGetByTransactionId(transactionID: string): ValidatedPurchase
 
         /**
          * List validated and stored purchases.
@@ -4605,7 +4630,7 @@ declare namespace nkruntime {
          * @returns The data of the validated and stored purchase.
          * @throws {TypeError, GoError}
          */
-        subscriptionGetByProductId(userID: string, productID: string): ValidatedPurchaseOwner
+        subscriptionGetByProductId(userID: string, productID: string): ValidatedSubscription
 
         /**
          * List validated and stored purchases.
@@ -4643,7 +4668,7 @@ declare namespace nkruntime {
          * @returns Ack of sent message.
          * @throws {TypeError, GoError}
          */
-         channelMessageUpdate(channelId: string, messageId: string, content?: {[key: string]: any}, senderId?: string, senderUsername?: string, persist?: boolean): ChannelMessageSendAck
+        channelMessageUpdate(channelId: string, messageId: string, content?: {[key: string]: any}, senderId?: string, senderUsername?: string, persist?: boolean): ChannelMessageSendAck
 
         /**
          * List channel messages.
@@ -4655,7 +4680,7 @@ declare namespace nkruntime {
          * @returns List of channel messages.
          * @throws {TypeError, GoError}
          */
-         channelMessagesList(channelId: string, limit?: number, forward?: boolean, cursor?: string): ChannelMessageList
+        channelMessagesList(channelId: string, limit?: number, forward?: boolean, cursor?: string): ChannelMessageList
 
         /**
          * Send channel message.
@@ -4676,7 +4701,40 @@ declare namespace nkruntime {
          * @returns The next cron matching timestamp in UTC seconds.
          * @throws {TypeError, GoError}
          */
-         cronNext(cron: string, timestamp: number): number
+        cronNext(cron: string, timestamp: number): number
+
+        /**
+         * Get local cache data by key.
+         *
+         * @param key - local cache key.
+         * @throws {TypeError, GoError}
+         * @returns local cache object.
+         */
+        localcacheGet(key: string): any;
+
+        /**
+         * Put data to local cache.
+         *
+         * @param key - local cache key.
+         * @param value - local cache value.
+         * @throws {TypeError, GoError}
+         */
+        localcachePut(key: string, value: any): void;
+
+        /**
+         * Delete local cache data by key.
+         *
+         * @param key - local cache key.
+         * @throws {TypeError, GoError}
+         */
+        localcacheDelete(key: string): void;
+
+        /**
+         * Get Satori object.
+         *
+         * @returns The satori integration interface.
+         */
+        getSatori(): Satori;
     }
 
     /**
@@ -4696,5 +4754,110 @@ declare namespace nkruntime {
          * @param initializer - The injector to initialize features in the game server.
          */
         (ctx: Context, logger: Logger, nk: Nakama, initializer: Initializer): void;
+    }
+
+    export interface Properties {
+        default: {[key: string]: string}
+        custom: {[key: string]: string}
+        computed: {[key: string]: string}
+    }
+
+    export interface PropertiesUpdate {
+        default?: {[key: string]: string}
+        custom?: {[key: string]: string}
+    }
+
+    export interface SatoriEvent {
+        name: string
+        id: string
+        metadata?: {[key: string]: string}
+        value: string
+        timestamp: number
+    }
+
+    export interface Experiment {
+        name: string
+        value: string
+    }
+
+    export interface Flag {
+        name: string
+        value: string
+        conditionChanged: boolean
+    }
+
+    export interface LiveEvent {
+        name: string
+        description: string
+        value: string
+        activeStartTime: number
+        activeEndTime: number
+    }
+
+    /**
+     * The Satori integration functions.
+     */
+    export interface Satori {
+        /**
+         * Create identity.
+         *
+         * @param id - Identity identifier.
+         * @throws {TypeError, GoError}
+         */
+        authenticate(id: string): void
+
+        /**
+         * Get identity properties.
+         *
+         * @param id - Identity identifier.
+         * @returns The identity properties.
+         * @throws {TypeError, GoError}
+         */
+        propertiesGet(id: string): Properties[]
+
+        /**
+         * Update identity properties.
+         *
+         * @param id - Identity identifier.
+         * @param properties - Updated properties.
+         * @throws {TypeError, GoError}
+         */
+        propertiesUpdate(id: string, properties: PropertiesUpdate): void
+
+        /**
+         * Publish events.
+         *
+         * @param id - Identity identifier.
+         * @param events - Events to publish.
+         * @throws {TypeError, GoError}
+         */
+        eventsPublish(id: string, events: SatoriEvent[]): void
+
+        /**
+         * List experiments.
+         *
+         * @param id - Identity identifier.
+         * @param names - Opt. List of experiment names.
+         * @throws {TypeError, GoError}
+         */
+        experimentsList(id: string, names?: string[]): Experiment[]
+
+        /**
+         * List flags.
+         *
+         * @param id - Identity identifier.
+         * @param names - Opt. List of flag names.
+         * @throws {TypeError, GoError}
+         */
+        flagsList(id: string, names?: string[]): Flag[]
+
+        /**
+         * List live events.
+         *
+         * @param id - Identity identifier.
+         * @param names - Opt. List of live event names.
+         * @throws {TypeError, GoError}
+         */
+        liveEventsList(id: string, names?: string[]): LiveEvent[]
     }
 }
